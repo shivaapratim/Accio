@@ -1,5 +1,3 @@
-// File: src/pages/MainPage.jsx - FINAL COMPLETE VERSION
-
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Sandpack } from '@codesandbox/sandpack-react';
@@ -31,7 +29,8 @@ export default function Welcome() {
   );
 }`;
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// --- CRITICAL CHANGE HERE: Use the correct environment variable name ---
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 const MainPage = () => {
     const { token, logout } = useContext(AuthContext);
@@ -42,14 +41,16 @@ const MainPage = () => {
     const [savedComponents, setSavedComponents] = useState([]);
     const [dependencies, setDependencies] = useState({ "styled-components": "latest" });
     
-    // useMemo creates a stable version of the 'api' object so useEffect doesn't run unnecessarily
+    // a stable version of the 'api' object so useEffect doesn't run unnecessarily
     const api = useMemo(() => axios.create({
-        baseURL: API_URL,
+        // --- CRITICAL CHANGE HERE: Use the correct constant for baseURL ---
+        baseURL: BACKEND_URL, 
         headers: { 'Authorization': `Bearer ${token}` }
     }), [token]);
 
     useEffect(() => {
         if (token) {
+            // No direct change here, as 'api' already uses BACKEND_URL
             api.get('/get-components')
               .then(response => setSavedComponents(response.data))
               .catch(error => {
@@ -63,7 +64,8 @@ const MainPage = () => {
         setIsLoading(true);
         setLastPrompt(prompt);
         try {
-            const response = await axios.post(`${API_URL}/ask-ai`, { prompt });
+            // --- CRITICAL CHANGE HERE: Use the correct constant for the API call ---
+            const response = await axios.post(`${BACKEND_URL}/ask-ai`, { prompt });
             let finalJsx = response.data.jsx;
             
             const newDeps = { "styled-components": "latest" };
@@ -79,7 +81,8 @@ const MainPage = () => {
             
             setJsxCode(finalJsx);
         } catch (error) {
-            alert(`Error generating component.`);
+            console.error("Error generating component:", error); // Log the full error
+            alert(`Error generating component: ${error.message || 'An unknown error occurred.'}`); // More informative alert
             setJsxCode(defaultComponentCode);
         }
         setIsLoading(false);
@@ -91,11 +94,15 @@ const MainPage = () => {
             return;
         }
         try {
+            // No direct change here, as 'api' already uses BACKEND_URL
             const response = await api.post('/save-component', { prompt: lastPrompt, jsx: jsxCode, css: "" });
             alert(response.data.message);
+            
+            // Refresh saved components after saving
             const freshComponents = await api.get('/get-components');
             setSavedComponents(freshComponents.data);
         } catch (error) {
+            console.error("Error saving component:", error); // Log the full error
             alert('Failed to save component.');
         }
     };
@@ -111,12 +118,22 @@ const MainPage = () => {
             <div className="side-panel">
                 <h2>Component AI</h2>
                 <button onClick={logout} className="logout-button">Logout</button>
-                <textarea placeholder="e.g., a styled login form..." value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-                <button onClick={askAI} disabled={isLoading}>{isLoading ? 'Generating...' : '✨ Generate'}</button>
+                <textarea 
+                    placeholder="e.g., a styled login form..." 
+                    value={prompt} 
+                    onChange={(e) => setPrompt(e.target.value)} 
+                />
+                <button onClick={askAI} disabled={isLoading || !prompt.trim()}>
+                    {isLoading ? 'Generating...' : '✨ Generate'}
+                </button>
                 <button onClick={handleSave} style={{ marginTop: '10px' }}>💾 Save Component</button>
                 <div className="saved-components-list">
                     <h3>Saved Components</h3>
-                    <ul>{savedComponents.map(c => <li key={c._id} onClick={() => loadComponent(c)}>{c.prompt}</li>)}</ul>
+                    {savedComponents.length === 0 ? (
+                        <p>No components saved yet.</p>
+                    ) : (
+                        <ul>{savedComponents.map(c => <li key={c._id} onClick={() => loadComponent(c)}>{c.prompt}</li>)}</ul>
+                    )}
                 </div>
             </div>
             <div className="main-content">

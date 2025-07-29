@@ -1,13 +1,10 @@
-// src/context/AuthContext.jsx
-
 import React, { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem('authToken'));
-
-    // This effect syncs the token between state and localStorage
+ 
     useEffect(() => {
         if (token) {
             localStorage.setItem('authToken', token);
