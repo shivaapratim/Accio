@@ -122,6 +122,7 @@ Prompt: "${userPrompt}"`;
 
     if (!response.ok) {
         const errorData = await response.json();
+        // This line was added: Throwing an error with a more specific message from OpenRouter
         throw new Error(errorData.error.message || `API request failed with status ${response.status}`);
     }
     
@@ -142,8 +143,8 @@ Prompt: "${userPrompt}"`;
 
     res.json(codeObject);
   } catch (error) {
-    console.error("Error processing AI response:", error.message);
-    res.status(500).json({ error: `Failed to get response from AI: ${error.message}` });
+    console.error("Error processing AI response:", error.message); // This line was made more generic
+    res.status(500).json({ error: `Failed to get response from AI: ${error.message}` }); // This line was made more specific
   }
 });
 
