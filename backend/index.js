@@ -6,9 +6,8 @@ require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
 const app = express();
-// Enable CORS for your frontend domain
 app.use(cors({
-    origin: 'https://accio-pro.onrender.com' // Allow requests only from your deployed frontend
+    origin: 'https://accio-pro.onrender.com'
 }));
 app.use(express.json());
 
@@ -16,11 +15,6 @@ const MONGO_URL = process.env.MONGO_URL;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Basic validation for environment variables
-if (!MONGO_URL || !OPENROUTER_API_KEY || !JWT_SECRET) {
-    console.error("ERROR: Missing one or more required environment variables (MONGO_URL, OPENROUTER_API_KEY, JWT_SECRET).");
-    process.exit(1); // Exit the process if critical env vars are missing
-}
 
 mongoose.connect(MONGO_URL)
   .then(() => console.log('Successfully connected to MongoDB!'))
@@ -39,8 +33,9 @@ const componentSchema = new mongoose.Schema({
     css: String,
     createdAt: { type: Date, default: Date.now }
 });
-
 const Component = mongoose.model('Component', componentSchema);
+
+
 
 const auth = (req, res, next) => {
     try {
@@ -53,6 +48,7 @@ const auth = (req, res, next) => {
     }
 };
 
+
 app.post('/register', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -64,12 +60,7 @@ app.post('/register', async (req, res) => {
         await newUser.save();
         res.status(201).json({ message: 'User created successfully!' });
     } catch (error) {
-        // More specific error handling for duplicate email
-        if (error.code === 11000) {
-            return res.status(400).json({ error: 'Email already registered.' });
-        }
-        console.error("Register error:", error); // Log the actual error
-        res.status(500).json({ error: 'An error occurred during registration.' });
+        res.status(400).json({ error: 'Email may already be in use.' });
     }
 });
 
@@ -87,10 +78,10 @@ app.post('/login', async (req, res) => {
         const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '24h' });
         res.json({ token });
     } catch (error) {
-        console.error("Login error:", error); // Log the actual error
-        res.status(500).json({ error: 'Something went wrong during login.' });
+        res.status(500).json({ error: 'Something went wrong.' });
     }
 });
+
 
 app.post('/ask-ai', async (req, res) => {
   const userPrompt = req.body.prompt;
@@ -122,8 +113,7 @@ Prompt: "${userPrompt}"`;
 
     if (!response.ok) {
         const errorData = await response.json();
-        // This line was added: Throwing an error with a more specific message from OpenRouter
-        throw new Error(errorData.error.message || `API request failed with status ${response.status}`);
+        throw new Error(errorData.error.message);
     }
     
     const completion = await response.json();
@@ -138,15 +128,16 @@ Prompt: "${userPrompt}"`;
     
     const codeObject = {
       jsx: jsxMatch[1].trim(),
-      css: "" // Assuming CSS is handled by styled-components within JSX
+      css: ""
     };
 
     res.json(codeObject);
   } catch (error) {
-    console.error("Error processing AI response:", error.message); // This line was made more generic
-    res.status(500).json({ error: `Failed to get response from AI: ${error.message}` }); // This line was made more specific
+    console.error("Error processing AI response:", error.message);
+    res.status(500).json({ error: "Failed to process the response from the AI." });
   }
 });
+
 
 app.post('/save-component', auth, async (req, res) => {
   try {
@@ -160,7 +151,6 @@ app.post('/save-component', auth, async (req, res) => {
     await newComponent.save();
     res.status(201).json({ message: 'Component saved!', component: newComponent });
   } catch (error) {
-    console.error("Save component error:", error); // Log the actual error
     res.status(500).json({ error: 'Failed to save component.' });
   }
 });
@@ -170,13 +160,12 @@ app.get('/get-components', auth, async (req, res) => {
     const components = await Component.find({ userId: req.userId }).sort({ createdAt: -1 });
     res.json(components);
   } catch (error) {
-    console.error("Get components error:", error); // Log the actual error
     res.status(500).json({ error: 'Failed to fetch components.' });
   }
 });
 
-const PORT = process.env.PORT || 3001; // Use Render's PORT or default to 3001 for local dev
+
+const PORT = process.env.PORT || 3001; 
 app.listen(PORT, () => {
   console.log(`Backend server is running on port ${PORT}`);
-  // In production, Render handles the host; for local, it's localhost
 });
