@@ -1,5 +1,3 @@
-// File: backend/index.js - FINAL PRODUCTION VERSION
-
 require('dotenv').config(); // MUST BE THE FIRST LINE
 const express = require('express');
 const cors = require('cors');
@@ -9,15 +7,29 @@ const jwt = require('jsonwebtoken');
 const axios = require('axios');
 
 const app = express();
-// app.use(cors());
+
+// Enhanced CORS configuration
 app.use(cors({
   origin: ['https://accio-pro.onrender.com', 'http://localhost:3000'],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
-// shivang
+// Explicit OPTIONS handling
+app.options('*', cors());
 
 app.use(express.json());
+
+// Request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// ... rest of your code stays the same ...
+
 
 // --- SECRETS LOADED FROM ENVIRONMENT VARIABLES ---
 const MONGO_URL = process.env.MONGO_URL;
