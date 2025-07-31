@@ -1,6 +1,10 @@
+// src/components/Register.jsx
+
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const Register = () => {
     const [email, setEmail] = useState('');
@@ -8,23 +12,14 @@ const Register = () => {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    // Define the backend URL using the environment variable
-    // This variable must be set in your Render frontend service settings (VITE_BACKEND_URL)
-    // and potentially in a local .env file for development.
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         try {
-            // Use the environment variable for the API call
-            await axios.post(`${BACKEND_URL}/register`, { email, password });
+            await axios.post(`${API_URL}/register`, { email, password });
             navigate('/login');
         } catch (err) {
-            // More robust error handling to display the specific message from the backend
-            const errorMessage = err.response && err.response.data && err.response.data.error 
-                                ? err.response.data.error 
-                                : 'Failed to register. An unexpected error occurred.';
+            const errorMessage = err.response?.data?.error || 'Registration failed. Please try again.';
             setError(errorMessage);
             console.error('Registration failed:', err);
         }

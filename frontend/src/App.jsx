@@ -8,6 +8,7 @@ import Register from './components/Register';
 import MainPage from './pages/MainPage';
 import './App.css';
 
+// This is a helper component to protect routes that require a user to be logged in
 const PrivateRoute = ({ children }) => {
     const { token } = useContext(AuthContext);
     return token ? children : <Navigate to="/login" />;

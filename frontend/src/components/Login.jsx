@@ -1,7 +1,11 @@
+// src/components/Login.jsx
+
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -10,24 +14,15 @@ const Login = () => {
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    // Define the backend URL using the environment variable
-    // This variable must be set in your Render frontend service settings (VITE_BACKEND_URL)
-    // and potentially in a local .env file for development.
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(''); 
         try {
-            // Use the environment variable for the API call
-            const response = await axios.post(`${BACKEND_URL}/login`, { email, password });
+            const response = await axios.post(`${API_URL}/login`, { email, password });
             login(response.data.token);
-            navigate('/'); // Redirect to the main app after successful login
+            navigate('/'); 
         } catch (err) {
-            // More robust error handling to display the specific message from the backend
-            const errorMessage = err.response && err.response.data && err.response.data.error 
-                                ? err.response.data.error 
-                                : 'An unexpected error occurred. Please try again.';
+            const errorMessage = err.response?.data?.error || 'Login failed. Please try again.';
             setError(errorMessage);
             console.error('Login failed:', err);
         }
