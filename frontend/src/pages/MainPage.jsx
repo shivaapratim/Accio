@@ -34,7 +34,7 @@ const root = createRoot(document.getElementById('root'));
 root.render(<Component />);
   `;
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL =  "https://ai-component-backend.onrender.com/";
 
 const MainPage = () => {
     const { token, logout } = useContext(AuthContext);
