@@ -9,7 +9,14 @@ const jwt = require('jsonwebtoken');
 const axios = require('axios');
 
 const app = express();
-app.use(cors());
+// app.use(cors());
+app.use(cors({
+  origin: ['https://accio-pro.onrender.com', 'http://localhost:3000'],
+  credentials: true
+}));
+
+// shivang
+
 app.use(express.json());
 
 // --- SECRETS LOADED FROM ENVIRONMENT VARIABLES ---
