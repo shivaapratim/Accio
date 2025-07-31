@@ -1,3 +1,6 @@
+
+
+
 require('dotenv').config(); // MUST BE THE FIRST LINE
 const express = require('express');
 const cors = require('cors');
@@ -6,39 +9,26 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 
-const app = express();
 
-// Enhanced CORS configuration
+const app = express();
+// app.use(cors());
 app.use(cors({
   origin: ['https://accio-pro.onrender.com', 'http://localhost:3000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
+  credentials: true
 }));
 
-// Explicit OPTIONS handling
-app.options('*', cors());
+
+// shivang
+
 
 app.use(express.json());
-
-// Request logging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
-
-// Add this route for debugging environment variables
-
-
-
-// ... rest of your code stays the same ...
 
 
 // --- SECRETS LOADED FROM ENVIRONMENT VARIABLES ---
 const MONGO_URL = process.env.MONGO_URL;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const JWT_SECRET = process.env.JWT_SECRET;
+
 
 // CRITICAL: Validate that all secrets are loaded.
 // This prevents runtime errors by stopping the server if a secret is missing.
@@ -48,21 +38,12 @@ if (!MONGO_URL || !OPENROUTER_API_KEY || !JWT_SECRET) {
     process.exit(1); // Stop the server if secrets are missing.
 }
 
-app.get('/debug/env', (req, res) => {
-  res.json({
-    hasMongoUrl: !!MONGO_URL,
-    hasOpenRouterKey: !!OPENROUTER_API_KEY,
-    hasJwtSecret: !!JWT_SECRET,
-    mongoUrlLength: MONGO_URL?.length || 0,
-    openRouterKeyLength: OPENROUTER_API_KEY?.length || 0,
-    jwtSecretLength: JWT_SECRET?.length || 0
-  });
-});
 
 // --- DATABASE CONNECTION ---
 mongoose.connect(MONGO_URL)
   .then(() => console.log('Successfully connected to MongoDB!'))
   .catch(err => console.error('ERROR: Could not connect to MongoDB.', err));
+
 
 // --- DATABASE SCHEMAS ---
 const userSchema = new mongoose.Schema({
@@ -70,6 +51,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true }
 });
 const User = mongoose.model('User', userSchema);
+
 
 const componentSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -79,6 +61,7 @@ const componentSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 const Component = mongoose.model('Component', componentSchema);
+
 
 // --- AUTHENTICATION MIDDLEWARE ---
 const auth = (req, res, next) => {
@@ -92,14 +75,7 @@ const auth = (req, res, next) => {
     }
 };
 
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Backend server is running successfully!', 
-    status: 'healthy',
-    timestamp: new Date().toISOString()
-  });
-});
-// shivang
+
 // --- AUTHENTICATION ROUTES ---
 app.post('/register', async (req, res) => {
     try {
@@ -113,6 +89,7 @@ app.post('/register', async (req, res) => {
         res.status(400).json({ error: 'Email may already be in use.' });
     }
 });
+
 
 app.post('/login', async (req, res) => {
     try {
@@ -128,14 +105,18 @@ app.post('/login', async (req, res) => {
     }
 });
 
+
 // --- AI ENDPOINT ---
 app.post('/ask-ai', async (req, res) => {
   const userPrompt = req.body.prompt;
   if (!userPrompt) return res.status(400).json({ error: 'Prompt is missing' });
 
+
   const fullPrompt = `Generate a React component based on this request: "${userPrompt}"
 
+
 CRITICAL: Return EXACTLY in this format with correct markers:
+
 
 JSX_START
 function ComponentName() {
@@ -147,11 +128,13 @@ function ComponentName() {
 }
 JSX_END
 
+
 CSS_START
 .component-wrapper {
   /* Your CSS styles here */
 }
 CSS_END
+
 
 RULES:
 - Use JSX_START and JSX_END markers for React component.
@@ -160,6 +143,7 @@ RULES:
 - Use className (not class).
 - No export statements.
 - No additional explanations or text outside markers.`;
+
 
   try {
     const response = await axios.post(
@@ -173,47 +157,38 @@ RULES:
           "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
           // UPDATED: Using your production frontend URL
-          "HTTP-Referer": "https://accio-pro.onrender.com", 
+          "HTTP-Referer": "https://accio-pro.onrender.com",
           "X-Title": "AI Component Builder"
         }
       }
     );
-    
+   
     const rawText = response.data.choices[0].message.content;
+
 
     const jsxMatch = rawText.match(/JSX_START\s*([\s\S]*?)\s*JSX_END/);
     const cssMatch = rawText.match(/CSS_START\s*([\s\S]*?)\s*CSS_END/);
-    
+   
     if (!jsxMatch || !jsxMatch[1]) {
       throw new Error("AI response did not contain valid JSX_START/JSX_END markers.");
     }
-    
+   
     const jsx = jsxMatch[1].trim();
     const css = cssMatch ? cssMatch[1].trim() : "/* CSS not found in response. */";
-    
+   
     res.json({ jsx, css });
 
+
   } catch (error) {
-    console.error("=== AI ENDPOINT ERROR ===");
-  console.error("Error type:", error.constructor.name);
-  console.error("Error message:", error.message);
-  
-  if (error.response) {
-    console.error("API Response Status:", error.response.status);
-    console.error("API Response Data:", error.response.data);
-  }
-  
-  console.error("Stack trace:", error.stack);
-  console.error("========================");
-  
-  const errorMessage = error.response ? JSON.stringify(error.response.data) : error.message;
-  res.status(500).json({ 
-      error: "Failed to process the response from the AI.",
-      reason: errorMessage,
-      details: error.response?.status || 'Unknown error'
+    const errorMessage = error.response ? JSON.stringify(error.response.data) : error.message;
+    console.error("Error processing AI response:", errorMessage);
+    res.status(500).json({
+        error: "Failed to process the response from the AI.",
+        reason: errorMessage
     });
   }
 });
+
 
 // --- COMPONENT ENDPOINTS ---
 app.post('/save-component', auth, async (req, res) => {
@@ -227,6 +202,7 @@ app.post('/save-component', auth, async (req, res) => {
   }
 });
 
+
 app.get('/get-components', auth, async (req, res) => {
   try {
     const components = await Component.find({ userId: req.userId }).sort({ createdAt: -1 });
@@ -235,6 +211,7 @@ app.get('/get-components', auth, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch components.' });
   }
 });
+
 
 // --- SERVER START ---
 const PORT = process.env.PORT || 3001;
