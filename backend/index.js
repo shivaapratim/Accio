@@ -28,6 +28,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// Add this route for debugging environment variables
+
+
+
 // ... rest of your code stays the same ...
 
 
@@ -43,6 +47,17 @@ if (!MONGO_URL || !OPENROUTER_API_KEY || !JWT_SECRET) {
     console.error("Please check your .env file for local development or your Render environment variables for production.");
     process.exit(1); // Stop the server if secrets are missing.
 }
+
+app.get('/debug/env', (req, res) => {
+  res.json({
+    hasMongoUrl: !!MONGO_URL,
+    hasOpenRouterKey: !!OPENROUTER_API_KEY,
+    hasJwtSecret: !!JWT_SECRET,
+    mongoUrlLength: MONGO_URL?.length || 0,
+    openRouterKeyLength: OPENROUTER_API_KEY?.length || 0,
+    jwtSecretLength: JWT_SECRET?.length || 0
+  });
+});
 
 // --- DATABASE CONNECTION ---
 mongoose.connect(MONGO_URL)
