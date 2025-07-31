@@ -65,6 +65,14 @@ const auth = (req, res, next) => {
     }
 };
 
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Backend server is running successfully!', 
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // --- AUTHENTICATION ROUTES ---
 app.post('/register', async (req, res) => {
     try {
@@ -159,11 +167,23 @@ RULES:
     res.json({ jsx, css });
 
   } catch (error) {
-    const errorMessage = error.response ? JSON.stringify(error.response.data) : error.message;
-    console.error("Error processing AI response:", errorMessage);
-    res.status(500).json({ 
-        error: "Failed to process the response from the AI.",
-        reason: errorMessage 
+    console.error("=== AI ENDPOINT ERROR ===");
+  console.error("Error type:", error.constructor.name);
+  console.error("Error message:", error.message);
+  
+  if (error.response) {
+    console.error("API Response Status:", error.response.status);
+    console.error("API Response Data:", error.response.data);
+  }
+  
+  console.error("Stack trace:", error.stack);
+  console.error("========================");
+  
+  const errorMessage = error.response ? JSON.stringify(error.response.data) : error.message;
+  res.status(500).json({ 
+      error: "Failed to process the response from the AI.",
+      reason: errorMessage,
+      details: error.response?.status || 'Unknown error'
     });
   }
 });
